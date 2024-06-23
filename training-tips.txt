@@ -1,0 +1,90 @@
+1. How to prepare config files
+
+To start training you must prepare 3 config files and optionally initial weights file.
+Config files:
+ - yolo.cfg   - describes the model and training settings
+ - yolo.names - lists classnames to be detected (name per line)
+ - yolo.data  - contains information about amount of classes, paths to train, test sets, yolo.names file and path to backup folder (where to store intermediate and final weights files)
+
+1.1 How to prepare yolo.names
+Just have a look at example like data/voc.names
+
+1.2 How to prepare yolo.cfg file
+
+Initial of the following was taken from 
+https://medium.com/@manivannan_data/how-to-train-yolov3-to-detect-custom-objects-ccbcafeb13d2
+
+Variant 1: (If you choose tiny-yolo.cfg - small model)
+
+a) Copy the tiny-yolo.cfg and save the file name as cat-dog-tiny-yolo.cfg
+ds@ds:<yolov3-root>$ cp cfg/yolov3-tiny.cfg cfg/cat-dog-yolov3-tiny.cfg
+
+b) make the following edits (change the Filters and classes value):
+
+Line 127: set filters=(<amount of classes> + 5)*3     # in our case (amount_of_classes=2) filters=21
+Line 135: set classes=2                               # amount of classes we want to detect
+Line 171: set filters=(classes + 5)*3 in our case filters=21
+Line 177: set classes=2, the number of categories we want to detect
+
+Variant 2: (If you choose yolov3.cfg - big model)
+a) Copy the yolov3.cfg and save the file name as cat-dog-yolov3.cfg
+ds@ds:<yolov3-root>$ cp cfg/yolov3.cfg cfg/cat-dog-yolov3.cfg
+
+b) make following edits (change the Filters and classes value):
+
+Line 603: set filters=(classes + 5)*3    # in our case filters=21
+Line 610: set classes=2                  # amount of classes we want to detect
+Line 689: set filters=(classes + 5)*3    # in our case filters=21
+Line 696: set classes=2
+Line 776: set filters=(classes + 5)*3    # in our case filters=21
+Line 783: set classes=2
+
+Next,
+Pick up batch and subdivision values depending on your available GPU memory
+The bigger batch - the more images will be used for iteration step - you may wait faster model converge
+The bigger batch - the more GPU memory required. If you have few GPU memory you may increase subdivision keeping batch size. This will lead to training time increase.
+
+Line 3: set batch=24, this means we will be using 24 images for every training step
+Line 4: set subdivisions=8, the batch will be divided by 8 to decrease GPU VRAM requirements.
+
+
+1.3 How to prepare yolo.data
+Have a look at cfg/voc.data
+Modify amount of classes, paths to .names file and backup folder.
+Set your paths to dataset/train/yolo.txt and dataset/test/yolo.txt files which list image paths that must be used for training/testing. How to obtain those files see below.
+
+
+2. How to prepare the dataset.
+
+It's assumed that you have already dataset splitted into train/test subsets and saved in VOC format:
+ - train
+   | - annotations/
+   | - images/
+ - test
+   | - annotations/
+   | - images/
+
+Let's the paths to train/test folders are
+<dataset_path>/train
+<dataset_path>/test
+
+Run provided python script
+ds@ds:<yolov3-root>$python scripts/voc_2_yolo_train_format_converter.py -n data/your.names -d <dataset_path>/train
+ds@ds:<yolov3-root>$python scripts/voc_2_yolo_train_format_converter.py -n data/your.names -d <dataset_path>/test
+
+Those commands will create <dataset_path>/train(test)/labels folders within train and test directories which are annotations in yolo format, and <dataset_path>/train(test)/yolo.txt files which list all images used for training (testing)
+
+
+3. Training
+
+Start the Trinaing with following command:
+
+ds@ds:<yolov3-root>$./darknet detector train cfg/cat-dog-obj.data cfg/cat-dog-yolov3-tiny.cfg darknet53.conv.74
+
+or
+
+ds@ds:<yolov3-root>$./darknet detector train cfg/cat-dog-obj.data cfg/cat-dog-yolov3.cfg darknet53.conv.74
+
+'darknet53.conf.74' is universal initial weights for conv layers. You may use it.
+Or you may use your previously obtained weights file (to proceed training, fine-tune).
+Or you may not use any - to start training from scratch.
